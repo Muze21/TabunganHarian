@@ -24,6 +24,7 @@ public class AppConfig {
     
     public static final String TIPE_PEMASUKAN = "PEMASUKAN";
     public static final String TIPE_PENGELUARAN = "PENGELUARAN";
+
     
     
     // ==================== UTILITY METHODS ====================

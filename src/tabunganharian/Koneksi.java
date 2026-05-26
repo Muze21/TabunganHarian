@@ -7,10 +7,22 @@ import java.sql.SQLException;
 public class Koneksi {
 
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(
-            "jdbc:mysql://localhost:3306/db_tabungan",
-            "root",
-            ""
-        );
+        // Alamat database: jdbc:mysql://[host]:[port]/[nama_database]
+        String url = "jdbc:mysql://localhost:3306/db_tabungan";
+        String user = "root"; // username bawaan Laragon
+        String password = ""; // password bawaan Laragon (kosong)
+
+        return DriverManager.getConnection(url, user, password);
+    }
+
+    // Method main untuk mengetes apakah koneksi berhasil
+    public static void main(String[] args) {
+        try {
+            Connection c = getConnection();
+            System.out.println("HORE! Koneksi ke database berhasil terhubung.");
+        } catch (SQLException e) {
+            System.out.println("YAH! Koneksi gagal. Pastikan Laragon sudah menyala dan database db_tabungan sudah dibuat.");
+            System.out.println("Detail Error: " + e.getMessage());
+        }
     }
 }

@@ -1,10 +1,9 @@
 package tabunganharian;
 // src/tabunganharian/TabunganController.java
 
-import javax.swing.table.DefaultTableModel;
 import java.sql.*;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import javax.swing.table.DefaultTableModel;
 
 
 public class TabunganController {
@@ -83,12 +82,11 @@ public class TabunganController {
             while (rs.next()) {
                 int id = rs.getInt("id");
                 Date dbTanggal = rs.getDate("tanggal");
-                String tanggalFormat = dbTanggal != null ? sdf.format(dbTanggal) : "";
                 String sumber = rs.getString("sumber");
                 int nominal = rs.getInt("nominal");
                 String tipePendapatan = rs.getString("tipe_pendapatan");
                 
-                model.addRow(new Object[]{id, tanggalFormat, sumber, nominal, tipePendapatan});
+                model.addRow(new Object[]{id, dbTanggal, sumber, nominal, tipePendapatan});
             }
         }
     }

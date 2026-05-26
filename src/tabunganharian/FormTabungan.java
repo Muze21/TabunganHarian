@@ -1,13 +1,14 @@
 package tabunganharian;
 
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 
 /**
  * FormTabungan.java - Main Application
@@ -36,6 +37,7 @@ public class FormTabungan extends JFrame {
     // ===== DATE MANAGEMENT =====
     private Date selectedDate;
     private SimpleDateFormat sdf = new SimpleDateFormat(AppConfig.DATE_FORMAT);
+    private SimpleDateFormat displayDateFormat = new SimpleDateFormat("d MMM yyyy");
     private DecimalFormat currencyFormat = new DecimalFormat("Rp #,###");
 
     public FormTabungan() {
@@ -50,6 +52,7 @@ public class FormTabungan extends JFrame {
         add(createStatisticsPanel(), BorderLayout.SOUTH);
 
         sdf.setLenient(false); // Mematikan toleransi (35/04 akan dianggap error, bukan 05/05)
+        reset(); // Set tanggal default ke hari ini saat form pertama kali dibuka
         loadData();
     }
 
@@ -61,10 +64,11 @@ public class FormTabungan extends JFrame {
         // Row 1: ID & Tanggal
         JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         txtId.setEditable(false);
-        row1.add(new JLabel("ID:"));
-        row1.add(txtId);
+        txtTanggal.setEditable(false);
         row1.add(new JLabel("Tanggal:"));
         row1.add(txtTanggal);
+        row1.add(new JLabel("id:"));
+        row1.add(txtId);
         main.add(row1);
 
         // Row 2: Sumber & Nominal
@@ -89,10 +93,12 @@ public class FormTabungan extends JFrame {
         JButton btnUbah = new JButton("Ubah");
         JButton btnHapus = new JButton("Hapus");
         JButton btnReset = new JButton("Reset");
+        
         btnSimpan.addActionListener(e -> simpan());
         btnUbah.addActionListener(e -> ubah());
         btnHapus.addActionListener(e -> hapus());
         btnReset.addActionListener(e -> reset());
+        
         row5.add(btnSimpan);
         row5.add(btnUbah);
         row5.add(btnHapus);
@@ -112,11 +118,46 @@ public class FormTabungan extends JFrame {
                 return false; // Tabel hanya bisa dibaca, tidak bisa diketik langsung
             }
         };
+
+        // table clikc
         tblTabungan = new JTable(tableModel);
+        tblTabungan.setRowHeight(24);
         tblTabungan.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting())
                 isiFormDariTabel();
         });
+
+        DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+             boolean hasFocus, int row, int column) {
+                super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                // Warna baris 
+                if (!isSelected) {
+                    Object tipe = table.getValueAt(row, 4);
+                    if (AppConfig.TIPE_PEMASUKAN.equals(tipe)) {
+                        setBackground(new Color(235, 255, 235));
+                        } else {
+                            setBackground(new Color(255, 235, 235));
+                            }
+                        }
+                        setForeground(Color.black
+
+                        );
+                // ubah tanggal ke huruf
+
+                if (column == 1 && value instanceof Date) {
+                    setText(displayDateFormat.format((Date) value));
+                } else if (column == 3 && value instanceof Number) {
+                    setText(formatCurrency(((Number) value).longValue()));
+                }
+                return this;
+            }
+        };
+        for (int i = 0; i < tableModel.getColumnCount(); i++) {
+            tblTabungan.getColumnModel().getColumn(i).setCellRenderer(renderer);
+            
+        }
         panel.add(new JScrollPane(tblTabungan), BorderLayout.CENTER);
         return panel;
     }
@@ -149,11 +190,15 @@ public class FormTabungan extends JFrame {
         try {
             // --- AWAL KODE OPSIONAL: AMBIL TANGGAL DARI TEXT FIELD ---
             try {
-                java.util.Date parsed = sdf.parse(txtTanggal.getText());
-                selectedDate = new java.sql.Date(parsed.getTime());
+                if (txtTanggal.getText().trim().isEmpty()) {
+                    selectedDate = new java.sql.Date(System.currentTimeMillis());
+                } else {
+                    java.util.Date parsed = displayDateFormat.parse(txtTanggal.getText());
+                    selectedDate = new java.sql.Date(parsed.getTime());
+                }
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(this, "Tanggal tidak valid! Pastikan formatnya benar ("
-                        + AppConfig.DATE_FORMAT + ") dan angkanya masuk akal.");
+                        + displayDateFormat.toPattern() + ") dan angkanya masuk akal.");
                 return;
             }
             // --- AKHIR KODE OPSIONAL ---
@@ -200,11 +245,15 @@ public class FormTabungan extends JFrame {
 
             // --- AWAL KODE OPSIONAL: AMBIL TANGGAL DARI TEXT FIELD ---
             try {
-                java.util.Date parsed = sdf.parse(txtTanggal.getText());
-                selectedDate = new java.sql.Date(parsed.getTime());
+                if (txtTanggal.getText().trim().isEmpty()) {
+                    selectedDate = new java.sql.Date(System.currentTimeMillis());
+                } else {
+                    java.util.Date parsed = displayDateFormat.parse(txtTanggal.getText());
+                    selectedDate = new java.sql.Date(parsed.getTime());
+                }
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(this, "Tanggal tidak valid! Pastikan formatnya benar ("
-                        + AppConfig.DATE_FORMAT + ") dan angkanya masuk akal.");
+                        + displayDateFormat.toPattern() + ") dan angkanya masuk akal.");
                 return;
             }
             // --- AKHIR KODE OPSIONAL ---
@@ -277,12 +326,11 @@ public class FormTabungan extends JFrame {
      */
     private void reset() {
         txtId.setText("");
-
-        // Menggunakan Calendar sesuai saran guru
+        //Calendar 
         Calendar cal = Calendar.getInstance();
         selectedDate = new Date(cal.getTimeInMillis());
 
-        txtTanggal.setText(sdf.format(selectedDate));
+        txtTanggal.setText(displayDateFormat.format(selectedDate));
         txtSumber.setText("");
         txtNominal.setText("");
         cmbTipePendapatan.setSelectedIndex(0);
@@ -300,6 +348,12 @@ public class FormTabungan extends JFrame {
             JOptionPane.showMessageDialog(this, "Error load data: " + ex.getMessage());
         }
     }
+    // jadiin ke RP
+
+    private String formatCurrency(long amount) {
+        String formatted = String.format("%,d", amount).replace(',', '.');
+        return "RP " + formatted;
+    }
 
     /**
      * Isi form saat row tabel diklik
@@ -311,9 +365,15 @@ public class FormTabungan extends JFrame {
 
         try {
             txtId.setText(tableModel.getValueAt(row, 0).toString());
-            String tanggalStr = tableModel.getValueAt(row, 1).toString();
-            selectedDate = new Date(sdf.parse(tanggalStr).getTime());
-            txtTanggal.setText(tanggalStr);
+            Object tanggalValue = tableModel.getValueAt(row, 1);
+            if (tanggalValue instanceof Date) {
+                selectedDate = (Date) tanggalValue;
+                txtTanggal.setText(displayDateFormat.format(selectedDate));
+            } else {
+                String tanggalStr = tanggalValue.toString();
+                selectedDate = new Date(displayDateFormat.parse(tanggalStr).getTime());
+                txtTanggal.setText(displayDateFormat.format(selectedDate));
+            }
 
             txtSumber.setText(tableModel.getValueAt(row, 2).toString());
             txtNominal.setText(tableModel.getValueAt(row, 3).toString());
